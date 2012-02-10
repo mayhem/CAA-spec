@@ -62,13 +62,13 @@ Fetch a listing of available cover art for a MusicBrainz release.
     }
 
 
-### /release/{mbid}/front
+### /release/{mbid}/front.jpg
 
 #### Summary
 
 Fetch the image that is most suitable for refering to as the "front" of a
 release. This is intentionally vague, and users will help curate this data into
-something that is meaningful. A suggested initially style is to use artwork that
+something that is meaningful. A suggested initial style is to use artwork that
 users would most likely expect to see in:
 
 * Digital shops when searching for the release
@@ -84,7 +84,7 @@ users would most likely expect to see in:
 
 #### Responses
 
-- 303 if the community have decided upon a "front" image for this
+- 307 if the community have decided upon a "front" image for this
   release.
 
 - 400 if {mbid} cannot be parsed as a valid UUID.
@@ -102,12 +102,12 @@ users would most likely expect to see in:
     > GET /release/99b09d02-9cc9-3fed-8431-f162165a9371/front HTTP/1.1
     > Host: coverartarchive.org
 
-    < HTTP/1.0 200 OK
-    < Status: 303
-    < Location: http://coverartarchive.org/release/99b09d02-9cc9-3fed-8431-f162165a9371/af3d070
+    < HTTP/1.1 307 Temporary Redirect
+    < Status: 307
+    < Location: http://coverartarchive.org/release/99b09d02-9cc9-3fed-8431-f162165a9371/af3d070.jpg
 
 
-### /release/{mbid}/{id}
+### /release/{mbid}/{id}.jpg
 
 #### Summary
 
@@ -121,7 +121,7 @@ the response of a /release/{mbid} request.
 
 #### Responses
 
-- 303 redirect to a binary image, matching the Content-Type to a
+- 307 redirect to a binary image, matching the Content-Type to a
   value in the requests Accept header field.
 
 - 404 if a release with this MBID cannot be found.
@@ -132,12 +132,12 @@ the response of a /release/{mbid} request.
 
 #### Example
 
-    > GET /release/foo/front HTTP/1.1
+    > GET /release/99b09d02-9cc9-3fed-8431-f162165a9371/af3d070.jpg HTTP/1.1
     > Host: coverartarchive.org
 
-    < HTTP/1.0 303 OK
-    < Status: 303
-    < Location: http://caa.internetarchive.org/mbid-99b09d02-9cc9-3fed-8431-f162165a9371/mbid-99b09d02-9cc9-3fed-8431-f162165a9371-af3d070.jpg
+    < HTTP/1.1 307 Temporary Redirect
+    < Status: 307
+    < Location: http://archive.org/download/mbid-99b09d02-9cc9-3fed-8431-f162165a9371/mbid-99b09d02-9cc9-3fed-8431-f162165a9371-af3d070.jpg
 
 
 --------
@@ -160,26 +160,37 @@ Archive are able to index this artwork. This will contain:
 - The release name as a string
 - The release artist credit as a string
 
+### File naming
+
+Files are named using integers derived from the current high resolution system
+time, for example via the `Time::HiRes::time` function in Perl. The exact
+formula to create a new file name is:
+
+    int((time() - 1327528905) * 100)
+
+This filename is allocated by MusicBrainz at the time of upload, and will never
+change.
+
 --------
 
 ## The Cover Art Archive and MusicBrainz
 
 ### Community Editing
 
-MusicBrainz provides 3 new edit types for manipulating cover art on the Cover
+MusicBrainz provides 3 new edit types for manipulating cover art in the Cover
 Art Archive.
 
 #### Add Cover Art
 
 This edit attaches a specific piece of cover art to a release. When the edit is
 successfully entered, the metadata index is updated to contain this image, with
-it's status set to 'pending review'.
+its status set to 'pending review'.
 
 If the community approves of this edit, the metadata index will be updated to
 indicate that it has been approved.
 
-If the community rejects this edit, then it will be removed from the index and
-the file store.
+If the community rejects this edit, then the entry will be removed from the index
+and the image from the file store.
 
 #### Remove Cover Art
 
@@ -193,12 +204,12 @@ If the edit is rejected, the artwork is kept.
 
 #### Edit Cover Art
 
-This edit allows users to edit a piece of cover art's data and metadata. When
+This edit allows users to replace a cover art image and/or edit its metadata. When
 the edit is entered, no changes happen to the Cover Art Archive.
 
 When the edit is accepted, the entry in the index is merged with the definition
-in the edit. If there is new cover art to upload, the artwork replaces the
-existing cover art, providing it hasn't changed since the edit was entered. If
+in the edit. If the edit included a new image, the artwork replaces the
+existing cover art — providing it hasn't changed since the edit was entered. If
 it has changed, the edit must fail as a conflict.
 
 If the edit is accepted, the Cover Art Archive does not change.
